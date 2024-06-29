@@ -1,5 +1,11 @@
 package kaz.olzhas.ylab.service;
 
+import kaz.olzhas.ylab.dao.BookingDao;
+import kaz.olzhas.ylab.dao.UserDao;
+import kaz.olzhas.ylab.dao.WorkspaceDao;
+import kaz.olzhas.ylab.dao.implementations.BookingDaoImpl;
+import kaz.olzhas.ylab.dao.implementations.UserDaoImpl;
+import kaz.olzhas.ylab.dao.implementations.WorkspaceDaoImpl;
 import kaz.olzhas.ylab.entity.Booking;
 import kaz.olzhas.ylab.entity.User;
 import kaz.olzhas.ylab.entity.Workspace;
@@ -8,30 +14,42 @@ import java.awt.print.Book;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
+/**
+ * Сервисный класс для управления операциями, связанными с пользователями.
+ */
 public class UserService {
 
-    private static Map<String, User> users;
+    private static final UserDao userDao = new UserDaoImpl();
+    private static final BookingDao bookingDao = new BookingDaoImpl();
+    private static final WorkspaceDao workspaceDao = new WorkspaceDaoImpl();
 
-    //Конструктор для Сервиса пользователь класса
-    public UserService(){
-        users = new HashMap<>();
-    }
-
-    /*
-    Метод для регистрации пользователя
+    /**
+     * Метод для регистрации нового пользователя.
+     *
+     * @param registrationUsername имя пользователя для регистрации
+     * @param registrationPassword пароль пользователя для регистрации
+     * @return true, если пользователь успешно зарегистрирован, false если пользователь с таким именем уже существует
      */
     public boolean registerUser(String registrationUsername, String registrationPassword) {
-        if(!users.containsKey(registrationUsername)){
-            User user = new User(registrationUsername, registrationPassword);
-            users.put(registrationUsername, user);
+
+        Optional<User> maybeUser = userDao.findByUsername(registrationUsername);
+        if(maybeUser.isPresent()){
+            return false;
+        }else{
+            userDao.save(new User(registrationUsername, registrationPassword));
             return true;
         }
-        return false;
+
     }
 
-    /*
-    Метод для проверки данных введенных пользователем
+    /**
+     * Метод для аутентификации пользователя.
+     *
+     * @param authUsername имя пользователя для аутентификации
+     * @param authPassword пароль пользователя для аутентификации
+     * @return true, если пользователь успешно аутентифицирован, иначе false
      */
     public boolean authenticateUser(String authUsername, String authPassword) {
 
@@ -40,62 +58,52 @@ public class UserService {
             return true;
         }
 
-        User user = users.get(authUsername);
-        if(user != null){
-            return user.getUsername().equals(authUsername) && user.getPassword().equals(authPassword);
-        }else{
-            return false;
+        Optional<User> maybeUser = userDao.findByUsername(authUsername);
+
+        if(maybeUser.isPresent()){
+            User user = maybeUser.get();
+            return user.getPassword().equals(authPassword);
         }
+
+        return false;
+
     }
 
-    /*
-    Метод для просмотра всех броней пользователя
+    /**
+     * Метод для получения всех бронирований пользователя.
+     *
+     * @param whoLogged имя пользователя, для которого нужно получить бронирования
+     * @return список бронирований пользователя
      */
-    public void showAllReservations(String whoLogged) {
-        List<Workspace> workspaces = users.get(whoLogged).getWorkspaceList();
+    public List<Booking> showAllReservations(String whoLogged) {
 
-        if(workspaces.size() == 0){
-            System.out.println("Вы ранее не бронировали место. Пожалуйста, сперва забронируйте себе место.");
-        }else{
-            for(int i = 0; i < workspaces.size(); i++){
-                Workspace workspace = workspaces.get(i);
-                List<Booking> bookings = workspace.getBookings();
-                System.out.println(workspace.getId() + " : " + workspace.getName());
-                for(Booking booking : bookings){
-                    System.out.println(booking.getId() + " - " + booking.getStart() + " : " + booking.getEnd());
-                }
-            }
-        }
+        Optional<User> user = userDao.findByUsername(whoLogged);
+
+
+        List<Booking> bookings = bookingDao.getByUserId(user.get().getId());
+
+        return bookings;
+
     }
 
-    /*
-    Метод который возвращает пользователя по его username
+    /**
+     * Метод для получения информации о помещении по его идентификатору.
+     *
+     * @param id идентификатор помещения
+     * @return объект Optional с информацией о помещении, если такое найдено, иначе пустой Optional
      */
-    public User getUserByUsername(String whoLogged) {
-        return users.get(whoLogged);
+    public Optional<Workspace> getWorkspacesById(Long id){
+        return workspaceDao.findById(id);
     }
 
-    /*
-    Просмотр броней по зарезервированному помещению
+    /**
+     * Метод для получения пользователя по его идентификатору.
+     *
+     * @param userId идентификатор пользователя
+     * @return объект пользователя, если найден, иначе null
      */
-    public void showAllBookingsInReservation(String whoLogged, int workspaceNumber) {
-        List<Workspace> workspaces = users.get(whoLogged).getWorkspaceList();
-
-        for(Workspace workspace : workspaces){
-            if(workspace.getId() == workspaceNumber){
-                for(Booking booking : workspace.getBookings()){
-                    System.out.println(booking.getId() + " - " + booking.getStart() + " : " + booking.getEnd());
-                }
-                break;
-            }
-        }
+    public User getUserById(Long userId){
+        return userDao.getById(userId);
     }
 
-    public Map<String, User> getUsers() {
-        return users;
-    }
-
-    public static void setUsers(Map<String, User> users) {
-        UserService.users = users;
-    }
 }

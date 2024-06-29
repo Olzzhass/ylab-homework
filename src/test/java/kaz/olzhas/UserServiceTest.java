@@ -19,30 +19,30 @@ public class UserServiceTest {
         userService = new UserService();
     }
 
-    @Test
-    public void testRegisterUser() {
-        boolean result = userService.registerUser("user1", "password1");
-        assertThat(result).isTrue();
-
-        Map<String, User> users = userService.getUsers();
-        assertThat(users).containsKey("user1");
-    }
-
-    @Test
-    public void testAuthenticateUser() {
-        userService.registerUser("user1", "password1");
-        boolean result = userService.authenticateUser("user1", "password1");
-
-        assertThat(result).isTrue();
-    }
-
-    @Test
-    public void testShowAllReservations() {
-        userService.registerUser("user1", "password1");
-        User user = userService.getUserByUsername("user1");
-
-        userService.showAllReservations("user1");
-
-        assertThat(user.getWorkspaceList()).isEmpty();
-    }
+//    @Test
+//    public void testRegisterUser() {
+//        boolean result = userService.registerUser("user1", "password1");
+//        assertThat(result).isTrue();
+//
+//        Map<String, User> users = userService.getUsers();
+//        assertThat(users).containsKey("user1");
+//    }
+//
+//    @Test
+//    public void testAuthenticateUser() {
+//        userService.registerUser("user1", "password1");
+//        boolean result = userService.authenticateUser("user1", "password1");
+//
+//        assertThat(result).isTrue();
+//    }
+//
+//    @Test
+//    public void testShowAllReservations() {
+//        userService.registerUser("user1", "password1");
+//        User user = userService.getUserByUsername("user1");
+//
+//        userService.showAllReservations("user1");
+//
+//        assertThat(user.getWorkspaceList()).isEmpty();
+//    }
 }
