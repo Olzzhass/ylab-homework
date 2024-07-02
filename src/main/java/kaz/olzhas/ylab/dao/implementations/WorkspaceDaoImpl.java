@@ -4,6 +4,8 @@ import kaz.olzhas.ylab.dao.WorkspaceDao;
 import kaz.olzhas.ylab.entity.Workspace;
 import kaz.olzhas.ylab.util.ConnectionManager;
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -14,6 +16,13 @@ import java.util.Optional;
  * Реализация интерфейса WorkspaceDao для взаимодействия с таблицей "workspace" в базе данных.
  */
 public class WorkspaceDaoImpl implements WorkspaceDao {
+
+    private final ConnectionManager connectionManager;
+
+    public WorkspaceDaoImpl(ConnectionManager connectionManager){
+        this.connectionManager = connectionManager;
+    }
+
     /**
      * Извлекает все рабочие пространства из таблицы "workspace".
      *
@@ -25,8 +34,8 @@ public class WorkspaceDaoImpl implements WorkspaceDao {
                 SELECT * FROM tables.workspace
                 """;
 
-        try (var connection = ConnectionManager.get();
-             var preparedStatement = connection.prepareStatement(query)) {
+        try (Connection connection = connectionManager.getConnection();
+             PreparedStatement preparedStatement = connection.prepareStatement(query)) {
 
             ResultSet resultSet = preparedStatement.executeQuery();
             List<Workspace> workspaceList = new ArrayList<>();
@@ -53,8 +62,8 @@ public class WorkspaceDaoImpl implements WorkspaceDao {
                 SELECT * FROM tables.workspace WHERE id = ?
                 """;
 
-        try (var connection = ConnectionManager.get();
-             var preparedStatement = connection.prepareStatement(query)) {
+        try (Connection connection = connectionManager.getConnection();
+             PreparedStatement preparedStatement = connection.prepareStatement(query)) {
 
             preparedStatement.setLong(1, id);
             ResultSet resultSet = preparedStatement.executeQuery();
@@ -77,8 +86,8 @@ public class WorkspaceDaoImpl implements WorkspaceDao {
                 INSERT INTO tables.workspace(name) VALUES (?)
                 """;
 
-        try (var connection = ConnectionManager.get();
-             var preparedStatement = connection.prepareStatement(query)) {
+        try (Connection connection = connectionManager.getConnection();
+             PreparedStatement preparedStatement = connection.prepareStatement(query)) {
 
             preparedStatement.setString(1, workspace.getName());
             preparedStatement.executeUpdate();

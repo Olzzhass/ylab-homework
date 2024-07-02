@@ -44,7 +44,7 @@ public class SeeByWorkspaceCommand implements Command {
 
         List<Booking> bookings1 = adminService.bookingsByWorkspace(idWorkspace);
         for(Booking booking : bookings1){
-            User user = userService.getUserById(booking.getUser_id());
+            User user = userService.getUserById(booking.getUserId());
             System.out.println(booking.getStart() + " - " + booking.getEnd() + " : " + user.getUsername());
         }
     }

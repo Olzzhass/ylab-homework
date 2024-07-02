@@ -5,6 +5,7 @@ import kaz.olzhas.ylab.entity.User;
 import kaz.olzhas.ylab.util.ConnectionManager;
 
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -15,6 +16,12 @@ import java.util.Optional;
  * Реализация интерфейса UserDao для взаимодействия с таблицей "user" в базе данных.
  */
 public class UserDaoImpl implements UserDao {
+
+    private final ConnectionManager connectionManager;
+
+    public UserDaoImpl(ConnectionManager connectionManager){
+        this.connectionManager = connectionManager;
+    }
 
     /**
      * Находит пользователя по имени пользователя.
@@ -27,8 +34,9 @@ public class UserDaoImpl implements UserDao {
         String query = """
                 SELECT * FROM tables."user" WHERE username = ?
                 """;
-        try (var connection = ConnectionManager.get();
-             var preparedStatement = connection.prepareStatement(query)) {
+
+        try (Connection connection = connectionManager.getConnection();
+             PreparedStatement preparedStatement = connection.prepareStatement(query)) {
 
             preparedStatement.setString(1, username);
             ResultSet resultSet = preparedStatement.executeQuery();
@@ -51,8 +59,8 @@ public class UserDaoImpl implements UserDao {
                 SELECT * FROM tables."user"
                 """;
 
-        try (var connection = ConnectionManager.get();
-            var preparedStatement = connection.prepareStatement(query)) {
+        try (Connection connection = connectionManager.getConnection();
+            PreparedStatement preparedStatement = connection.prepareStatement(query)) {
 
             ResultSet resultSet = preparedStatement.executeQuery();
             List<User> users = new ArrayList<>();
@@ -79,8 +87,8 @@ public class UserDaoImpl implements UserDao {
                 INSERT INTO tables."user"(username, password) VALUES (?, ?)
                 """;
 
-        try (var connection = ConnectionManager.get();
-             var preparedStatement = connection.prepareStatement(query)) {
+        try (Connection connection = connectionManager.getConnection();
+             PreparedStatement preparedStatement = connection.prepareStatement(query)) {
 
             preparedStatement.setString(1, user.getUsername());
             preparedStatement.setString(2, user.getPassword());
@@ -105,8 +113,8 @@ public class UserDaoImpl implements UserDao {
                 SELECT * FROM tables."user" WHERE id = ?
                 """;
 
-        try (var connection = ConnectionManager.get();
-             var preparedStatement = connection.prepareStatement(query)) {
+        try (Connection connection = connectionManager.getConnection();
+             PreparedStatement preparedStatement = connection.prepareStatement(query)) {
 
             preparedStatement.setLong(1, userId);
             ResultSet resultSet = preparedStatement.executeQuery();

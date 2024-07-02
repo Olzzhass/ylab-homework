@@ -9,6 +9,8 @@ import kaz.olzhas.ylab.dao.implementations.WorkspaceDaoImpl;
 import kaz.olzhas.ylab.entity.Booking;
 import kaz.olzhas.ylab.entity.User;
 import kaz.olzhas.ylab.entity.Workspace;
+import kaz.olzhas.ylab.util.ConnectionManager;
+import kaz.olzhas.ylab.util.PropertiesUtil;
 
 import java.awt.print.Book;
 import java.time.LocalDateTime;
@@ -23,9 +25,11 @@ import java.util.Optional;
 public class AdminService {
     private WorkspaceService workspaceService;
     private UserService userService;
-    private static final WorkspaceDao workspaceDao = new WorkspaceDaoImpl();
-    private static final UserDao userDao = new UserDaoImpl();
-    private static final BookingDao bookingDao = new BookingDaoImpl();
+    private final WorkspaceDao workspaceDao;
+    private final UserDao userDao;
+    private final BookingDao bookingDao;
+
+    private ConnectionManager connectionManager;
 
     /**
      * Конструктор для инициализации сервиса администратора.
@@ -33,9 +37,13 @@ public class AdminService {
      * @param workspaceService сервис для управления помещениями
      * @param userService     сервис для управления пользователями
      */
-    public AdminService(WorkspaceService workspaceService, UserService userService) {
+    public AdminService(WorkspaceService workspaceService, UserService userService, ConnectionManager connectionManager) {
         this.workspaceService = workspaceService;
         this.userService = userService;
+        this.connectionManager = connectionManager;
+        this.userDao = new UserDaoImpl(connectionManager);
+        this.workspaceDao = new WorkspaceDaoImpl(connectionManager);
+        this.bookingDao = new BookingDaoImpl(connectionManager);
     }
 
     /**
@@ -120,7 +128,7 @@ public class AdminService {
         }else{
             for(Booking booking : bookings){
 
-                Optional<Workspace> workspace = workspaceDao.findById(booking.getWorkspace_id());
+                Optional<Workspace> workspace = workspaceDao.findById(booking.getWorkspaceId());
 
                 System.out.println(workspace.get().getName() + " - " + booking.getStart() + " : " + booking.getEnd());
             }

@@ -1,6 +1,7 @@
 package kaz.olzhas.ylab.dao;
 
 import kaz.olzhas.ylab.entity.User;
+import kaz.olzhas.ylab.util.ConnectionManager;
 
 import java.util.List;
 import java.util.Optional;

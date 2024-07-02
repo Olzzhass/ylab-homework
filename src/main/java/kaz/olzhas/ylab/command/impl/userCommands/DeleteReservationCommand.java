@@ -34,7 +34,7 @@ public class DeleteReservationCommand implements Command {
             System.out.println("Вы ранее не бронировали место. Пожалуйста, сперва забронируйте себе место.");
         }else{
             for(Booking booking : bookings){
-                Optional<Workspace> workspace = userService.getWorkspacesById(booking.getWorkspace_id());
+                Optional<Workspace> workspace = userService.getWorkspacesById(booking.getWorkspaceId());
                 System.out.println(workspace.get().getId() + " : " + workspace.get().getName());
                 System.out.println(booking.getId() + " - " + booking.getStart() + " : " + booking.getEnd());
             }

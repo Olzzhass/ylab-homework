@@ -4,15 +4,20 @@ import kaz.olzhas.ylab.dao.BookingDao;
 import kaz.olzhas.ylab.entity.Booking;
 import kaz.olzhas.ylab.util.ConnectionManager;
 
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Timestamp;
+import java.net.ConnectException;
+import java.sql.*;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
 public class BookingDaoImpl implements BookingDao {
+
+    private final ConnectionManager connectionManager;
+
+    public BookingDaoImpl(ConnectionManager connectionManager){
+        this.connectionManager = connectionManager;
+    }
+
     /**
      * Метод для сохранения брони
      * @param userId
@@ -29,8 +34,8 @@ public class BookingDaoImpl implements BookingDao {
                 INSERT INTO tables.booking(user_id, workspace_id, start_time, end_time) VALUES (?, ?, ?, ?)
                 """;
 
-        try (var connection = ConnectionManager.get();
-             var preparedStatement = connection.prepareStatement(query)) {
+        try (Connection connection = connectionManager.getConnection();
+             PreparedStatement preparedStatement = connection.prepareStatement(query)) {
 
             preparedStatement.setLong(1, userId);
             preparedStatement.setLong(2, workspaceId);
@@ -58,8 +63,8 @@ public class BookingDaoImpl implements BookingDao {
                 SELECT * FROM tables.booking WHERE user_id = ?
                 """;
 
-        try (var connection = ConnectionManager.get();
-             var preparedStatement = connection.prepareStatement(query)) {
+        try (Connection connection = connectionManager.getConnection();
+             PreparedStatement preparedStatement = connection.prepareStatement(query)) {
 
             preparedStatement.setLong(1, userId);
             ResultSet resultSet = preparedStatement.executeQuery();
@@ -87,8 +92,8 @@ public class BookingDaoImpl implements BookingDao {
                 DELETE FROM tables.booking WHERE id = ?
                 """;
 
-        try (var connection = ConnectionManager.get();
-             var preparedStatement = connection.prepareStatement(query)) {
+        try (Connection connection = connectionManager.getConnection();
+             PreparedStatement preparedStatement = connection.prepareStatement(query)) {
 
             preparedStatement.setLong(1, id);
             preparedStatement.executeUpdate();
@@ -111,8 +116,8 @@ public class BookingDaoImpl implements BookingDao {
         String query = """
                 SELECT * FROM tables.booking WHERE workspace_id = ?
                 """;
-        try (var connection = ConnectionManager.get();
-             var preparedStatement = connection.prepareStatement(query)) {
+        try (Connection connection = connectionManager.getConnection();
+             PreparedStatement preparedStatement = connection.prepareStatement(query)) {
 
             preparedStatement.setLong(1, workspaceId);
             ResultSet resultSet = preparedStatement.executeQuery();
@@ -142,8 +147,8 @@ public class BookingDaoImpl implements BookingDao {
                 SELECT * FROM tables.booking WHERE workspace_id = ? AND start_time >= ? AND end_time <= ?
                 """;
 
-        try (var connection = ConnectionManager.get();
-             var preparedStatement = connection.prepareStatement(query)) {
+        try (Connection connection = connectionManager.getConnection();
+             PreparedStatement preparedStatement = connection.prepareStatement(query)) {
 
             preparedStatement.setLong(1, workspaceId);
             preparedStatement.setTimestamp(2, Timestamp.valueOf(start));
@@ -164,6 +169,26 @@ public class BookingDaoImpl implements BookingDao {
     }
 
     /**
+     * Метод для удаления(очистки таблицы)
+     * @return
+     */
+    @Override
+    public boolean deleteAll() {
+        String query = """
+                TRUNCATE TABLE tables.booking;
+                """;
+
+        try (Connection connection = connectionManager.getConnection();
+             PreparedStatement preparedStatement = connection.prepareStatement(query)) {
+
+            return preparedStatement.execute();
+
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
      * Переоброзавать ResultSet в объект класса Booking
      * @param resultSet
      * @return
@@ -173,8 +198,8 @@ public class BookingDaoImpl implements BookingDao {
         Booking booking = new Booking();
 
         booking.setId(resultSet.getLong("id"));
-        booking.setUser_id(resultSet.getLong("user_id"));
-        booking.setWorkspace_id(resultSet.getLong("workspace_id"));
+        booking.setUserId(resultSet.getLong("user_id"));
+        booking.setWorkspaceId(resultSet.getLong("workspace_id"));
         booking.setStart(resultSet.getTimestamp("start_time").toLocalDateTime());
         booking.setEnd(resultSet.getTimestamp("end_time").toLocalDateTime());
 

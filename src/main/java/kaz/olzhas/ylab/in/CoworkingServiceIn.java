@@ -1,13 +1,8 @@
 package kaz.olzhas.ylab.in;
 
 import kaz.olzhas.ylab.command.Command;
-import kaz.olzhas.ylab.command.impl.adminCommands.*;
-import kaz.olzhas.ylab.command.impl.mainCommands.AuthorizationCommand;
-import kaz.olzhas.ylab.command.impl.mainCommands.RegistrationCommand;
-import kaz.olzhas.ylab.command.impl.mainCommands.TurnOffApplicationCommand;
-import kaz.olzhas.ylab.command.impl.userCommands.*;
-import kaz.olzhas.ylab.entity.Booking;
-import kaz.olzhas.ylab.entity.User;
+import kaz.olzhas.ylab.command.CommandExecutor;
+import kaz.olzhas.ylab.command.CommandFactory;
 import kaz.olzhas.ylab.handler.AdminHandler;
 import kaz.olzhas.ylab.handler.MainHandler;
 import kaz.olzhas.ylab.handler.UserHandler;
@@ -15,8 +10,9 @@ import kaz.olzhas.ylab.liquibase.LiquibaseDemo;
 import kaz.olzhas.ylab.service.AdminService;
 import kaz.olzhas.ylab.service.UserService;
 import kaz.olzhas.ylab.service.WorkspaceService;
+import kaz.olzhas.ylab.util.ConnectionManager;
+import kaz.olzhas.ylab.util.PropertiesUtil;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Scanner;
 
@@ -32,6 +28,12 @@ public class CoworkingServiceIn {
     private Map<Integer, Command> mainCommands;
     private Map<Integer, Command> userCommands;
     private Map<Integer, Command> adminCommands;
+    private CommandExecutor commandExecutor;
+
+    private ConnectionManager connectionManager = new ConnectionManager(PropertiesUtil.get("db.url"),
+            PropertiesUtil.get("db.username"),
+            PropertiesUtil.get("db.password"),
+            PropertiesUtil.get("db.driver"));
     public static boolean loggedIn = false;
     public static String whoLogged = null;
 
@@ -40,36 +42,15 @@ public class CoworkingServiceIn {
      */
 
     public CoworkingServiceIn(){
-        userService = new UserService();
-        workspaceService = new WorkspaceService(userService);
-        adminService = new AdminService(workspaceService, userService);
+        userService = new UserService(connectionManager);
+        workspaceService = new WorkspaceService(userService, connectionManager);
+        adminService = new AdminService(workspaceService, userService, connectionManager);
         sc = new Scanner(System.in);
+        commandExecutor = new CommandExecutor(sc);
 
-
-        /*
-
-        Использовал паттерн Command
-
-         */
-        mainCommands = new HashMap<>();
-        mainCommands.put(1, new RegistrationCommand(userService, sc));
-        mainCommands.put(2, new AuthorizationCommand(userService, sc));
-        mainCommands.put(3, new TurnOffApplicationCommand());
-
-        userCommands = new HashMap<>();
-        userCommands.put(1, new SeeAllReservationsCommand(userService, sc));
-        userCommands.put(2, new ReservationOfSpaceCommand(workspaceService, sc));
-        userCommands.put(3, new DeleteReservationCommand(workspaceService, userService, sc));
-        userCommands.put(4, new AllAvailableSlotsByDateCommand(workspaceService, sc));
-        userCommands.put(5, new QuitFromUserCommand());
-
-        adminCommands = new HashMap<>();
-        adminCommands.put(1, new AddNewWorkspaceCommand(adminService, sc));
-        adminCommands.put(2, new QuitFromAdminCommand());
-        adminCommands.put(3, new SeeAllWorkspacesCommand(adminService, sc));
-        adminCommands.put(4, new SeeAllUsers(adminService, sc));
-        adminCommands.put(5, new SeeByWorkspaceCommand(adminService, userService, sc));
-        adminCommands.put(6, new SeeByUser(adminService, sc));
+        mainCommands = CommandFactory.createMainCommands(userService, sc);
+        userCommands = CommandFactory.createUserCommands(userService, workspaceService, sc);
+        adminCommands = CommandFactory.createAdminCommands(adminService, userService, sc);
 
     }
 
@@ -82,45 +63,28 @@ public class CoworkingServiceIn {
      */
     public void start(MainHandler mainHandler, UserHandler userHandler, AdminHandler adminHandler){
 
-        LiquibaseDemo liquibaseDemo = LiquibaseDemo.getInstance();
+        LiquibaseDemo liquibaseDemo = new LiquibaseDemo(connectionManager.getConnection(), "db/main-changelog.xml", "liquibase");
         liquibaseDemo.runMigrations();
 
         while (true){
             if(!loggedIn){
 
                 mainHandler.displayMainPanel();
-                executeCommand(mainCommands);
+                commandExecutor.executeCommand(mainCommands);
 
             } else if (whoLogged.equalsIgnoreCase("admin")) {
 
                 adminHandler.displayAdminPanel();
-                executeCommand(adminCommands);
+                commandExecutor.executeCommand(adminCommands);
 
             } else if (whoLogged != null) {
 
                 userHandler.displayUserPanel();
-                executeCommand(userCommands);
+                commandExecutor.executeCommand(userCommands);
 
             }else{
                 System.out.println("Неправильный выбор.");
             }
-        }
-    }
-
-    /**
-     * Метод для выполнения команды на основе выбранного пользователем действия.
-     *
-     * @param commands карта команд, с которыми можно взаимодействовать
-     */
-    private void executeCommand(Map<Integer, Command> commands) {
-        System.out.print("Выберите действие: ");
-        int choice = sc.nextInt();
-        sc.nextLine();
-        Command command = commands.get(choice);
-        if (command != null) {
-            command.execute();
-        } else {
-            System.out.println("Был введен неверный выбор. Попробуйте снова.");
         }
     }
 

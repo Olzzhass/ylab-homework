@@ -9,6 +9,8 @@ import kaz.olzhas.ylab.dao.implementations.WorkspaceDaoImpl;
 import kaz.olzhas.ylab.entity.Booking;
 import kaz.olzhas.ylab.entity.User;
 import kaz.olzhas.ylab.entity.Workspace;
+import kaz.olzhas.ylab.util.ConnectionManager;
+import kaz.olzhas.ylab.util.PropertiesUtil;
 
 import java.awt.print.Book;
 import java.util.HashMap;
@@ -21,9 +23,18 @@ import java.util.Optional;
  */
 public class UserService {
 
-    private static final UserDao userDao = new UserDaoImpl();
-    private static final BookingDao bookingDao = new BookingDaoImpl();
-    private static final WorkspaceDao workspaceDao = new WorkspaceDaoImpl();
+    private final UserDao userDao;
+    private final WorkspaceDao workspaceDao;
+    private final BookingDao bookingDao;
+    private ConnectionManager connectionManager;
+
+    public UserService(ConnectionManager connectionManager) {
+        this.connectionManager = connectionManager;
+        this.userDao = new UserDaoImpl(connectionManager);
+        this.workspaceDao = new WorkspaceDaoImpl(connectionManager);
+        this.bookingDao = new BookingDaoImpl(connectionManager);
+    }
+
 
     /**
      * Метод для регистрации нового пользователя.

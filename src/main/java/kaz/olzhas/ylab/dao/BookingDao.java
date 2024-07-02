@@ -1,6 +1,7 @@
 package kaz.olzhas.ylab.dao;
 
 import kaz.olzhas.ylab.entity.Booking;
+import kaz.olzhas.ylab.util.ConnectionManager;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -54,4 +55,10 @@ public interface BookingDao {
      * @return список бронирований рабочего пространства в указанный период.
      */
     List<Booking> getBookingsForWorkspace(Long workspaceId, LocalDateTime start, LocalDateTime end);
+
+    /**
+     * Метод для удаления всех записей из таблицы
+     * @return
+     */
+    boolean deleteAll();
 }

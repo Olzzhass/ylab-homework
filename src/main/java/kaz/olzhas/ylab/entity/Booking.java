@@ -14,8 +14,8 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class Booking {
     private Long id;
-    private Long user_id;
-    private Long workspace_id;
+    private Long userId;
+    private Long workspaceId;
     private LocalDateTime start; //start time
     private LocalDateTime end; //end time
 

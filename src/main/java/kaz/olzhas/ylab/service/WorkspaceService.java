@@ -9,6 +9,8 @@ import kaz.olzhas.ylab.dao.implementations.WorkspaceDaoImpl;
 import kaz.olzhas.ylab.entity.Booking;
 import kaz.olzhas.ylab.entity.User;
 import kaz.olzhas.ylab.entity.Workspace;
+import kaz.olzhas.ylab.util.ConnectionManager;
+import kaz.olzhas.ylab.util.PropertiesUtil;
 
 import java.awt.print.Book;
 import java.time.LocalDateTime;
@@ -24,17 +26,23 @@ public class WorkspaceService {
 
     private UserService userService;
 
-    private static final WorkspaceDao workspaceDao = new WorkspaceDaoImpl();
-    private static final BookingDao bookingDao = new BookingDaoImpl();
-    private static final UserDao userDao = new UserDaoImpl();
+    private final WorkspaceDao workspaceDao;
+    private final BookingDao bookingDao;
+    private final UserDao userDao;
+
+    private ConnectionManager connectionManager;
 
     /**
      * Конструктор для инициализации сервиса рабочего места.
      *
      * @param userService сервис пользователей
      */
-    public WorkspaceService(UserService userService){
+    public WorkspaceService(UserService userService, ConnectionManager connectionManager){
         this.userService = userService;
+        this.connectionManager = connectionManager;
+        this.userDao = new UserDaoImpl(connectionManager);
+        this.bookingDao = new BookingDaoImpl(connectionManager);
+        this.workspaceDao = new WorkspaceDaoImpl(connectionManager);
     }
 
     /**
