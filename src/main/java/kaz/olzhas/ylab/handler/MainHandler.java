@@ -13,7 +13,7 @@ public class MainHandler {
         System.out.println("       Выберите действие:");
         System.out.println("1. Зарегестрироваться");
         System.out.println("2. Войти в существующий аккаунт");
-        System.out.println("3. Выключить приложение");
+        System.out.println("3. Выключить приложение"); //TODO
     }
 
     /**
