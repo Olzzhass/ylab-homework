@@ -1,114 +1,139 @@
 package kaz.olzhas.ylab.service;
 
+import kaz.olzhas.ylab.dao.BookingDao;
+import kaz.olzhas.ylab.dao.UserDao;
+import kaz.olzhas.ylab.dao.WorkspaceDao;
+import kaz.olzhas.ylab.dao.implementations.BookingDaoImpl;
+import kaz.olzhas.ylab.dao.implementations.UserDaoImpl;
+import kaz.olzhas.ylab.dao.implementations.WorkspaceDaoImpl;
 import kaz.olzhas.ylab.entity.Booking;
 import kaz.olzhas.ylab.entity.User;
 import kaz.olzhas.ylab.entity.Workspace;
+import kaz.olzhas.ylab.util.ConnectionManager;
+import kaz.olzhas.ylab.util.PropertiesUtil;
 
+import java.awt.print.Book;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
+/**
+ * Сервисный класс для администратора, обеспечивающий доступ к операциям над помещениями, пользователями и бронированиями.
+ */
 public class AdminService {
     private WorkspaceService workspaceService;
     private UserService userService;
+    private final WorkspaceDao workspaceDao;
+    private final UserDao userDao;
+    private final BookingDao bookingDao;
 
-    //Конструктор для Сервиса Админ класса
-    public AdminService(WorkspaceService workspaceService, UserService userService) {
+    private ConnectionManager connectionManager;
+
+    /**
+     * Конструктор для инициализации сервиса администратора.
+     *
+     * @param workspaceService сервис для управления помещениями
+     * @param userService     сервис для управления пользователями
+     */
+    public AdminService(WorkspaceService workspaceService, UserService userService, ConnectionManager connectionManager) {
         this.workspaceService = workspaceService;
         this.userService = userService;
+        this.connectionManager = connectionManager;
+        this.userDao = new UserDaoImpl(connectionManager);
+        this.workspaceDao = new WorkspaceDaoImpl(connectionManager);
+        this.bookingDao = new BookingDaoImpl(connectionManager);
     }
 
-    // Метод для добавления нового помещения
-    public void addWorkspace(int id, String name){
-        List<Workspace> workspaces = workspaceService.getWorkspaceList();
-        workspaces.add(new Workspace(id, name));
-        workspaceService.setWorkspaceList(workspaces);
+    /**
+     * Метод для добавления нового помещения.
+     *
+     * @param name имя нового помещения
+     */
+    public void addWorkspace(String name){
+
+        Workspace workspace = new Workspace();
+        workspace.setName(name);
+
+        workspaceDao.save(workspace);
         System.out.println("Рабочее место успешно добавлено.");
+
     }
 
-    /*
-    Метод для просмотра всех помещении
+    /**
+     * Метод для просмотра всех помещений.
+     *
+     * @return список всех помещений
      */
-    public void seeAllWorkspaces(){
-        List<Workspace> workspaces = workspaceService.getWorkspaceList();
-        if(workspaces.size() == 0){
-            System.out.println("Пока что вы не добавили рабочие места.");
-        }else {
-            System.out.println("Доступные рабочие места:");
-            for (Workspace workspace : workspaces) {
-                System.out.println(workspace.getId() + " : " + workspace.getName());
-            }
-        }
+    public List<Workspace> seeAllWorkspaces(){
+
+        return workspaceDao.findAll();
+
     }
 
-    /*
-    Для просмотра всех пользователей
+    /**
+     * Метод для просмотра всех пользователей.
+     *
+     * @return список всех пользователей
      */
-    public void seeAllUsers(){
-        Map<String, User> users = userService.getUsers();
-        System.out.println("ВСЕ ПОЛЬЗОВАТЕЛИ:");
-        for(Map.Entry<String, User> entry : users.entrySet()){
-            User user = entry.getValue();
-            System.out.println("Username: " + user.getUsername());
-            System.out.println("Password: " + user.getPassword() + '\n');
-        }
+    public List<User> seeAllUsers(){
+
+        return userDao.findAll();
+
     }
 
-
+    /**
+     * Метод для просмотра всех пользователей без вывода пароля.
+     */
     public void seeAllUsersWithoutPassword(){
-        Map<String, User> users = userService.getUsers();
-        System.out.println("ВСЕ ПОЛЬЗОВАТЕЛИ:");
-        for(Map.Entry<String, User> entry : users.entrySet()){
-            User user = entry.getValue();
-            System.out.println("Username: " + user.getUsername());
-        }
-    }
 
-    /*
-    Просмот всех броней по определенной дате
-     */
-    public List<Booking> bookingsByDate(LocalDateTime start, LocalDateTime end){
-        List<Booking> filteredBookings = new ArrayList<>();
-        for (Booking booking : workspaceService.getAllBookings()) {
-            if (!booking.getStart().isAfter(end) && !booking.getEnd().isBefore(start)) {
-                filteredBookings.add(booking);
+        List<User> users = userDao.findAll();
+        if(users.size() == 0){
+            System.out.println("Пока что пользователей нет.");
+        }else{
+            System.out.println("ВСЕ ПОЛЬЗОВАТЕЛИ:");
+            for(User user : users){
+                System.out.println("Username: " + user.getUsername());
             }
         }
-        return filteredBookings;
+
     }
 
-    /*
-   Просмотр всех броней по определенному помещению
+    /**
+     * Метод для просмотра всех бронирований по определенному помещению.
+     *
+     * @param workspaceId идентификатор помещения
+     * @return список бронирований для указанного помещения
      */
-    public List<Booking> bookingsByWorkspace(int workspaceId){
-        List<Booking> filteredBookings = new ArrayList<>();
-        List<Workspace> workspaces = workspaceService.getWorkspaceList();
-        for(Workspace workspace : workspaces){
-            if(workspace.getId() == workspaceId){
-                filteredBookings.addAll(workspace.getBookings());
-                break;
-            }
-        }
-        return filteredBookings;
+    public List<Booking> bookingsByWorkspace(Long workspaceId){
+
+        return bookingDao.getByWorkspaceId(workspaceId);
+
     }
 
-    /*
-    Просмотр по определенному пользователю
+    /**
+     * Метод для просмотра всех бронирований по определенному пользователю.
+     *
+     * @param username имя пользователя
      */
     public void bookingsByUser(String username){
-        Map<String, User> users = userService.getUsers();
-        for(Map.Entry<String, User> entry : users.entrySet()){
-            User user = entry.getValue();
-            if(user.getUsername().equals(username)){
-                List<Workspace> workspaces = user.getWorkspaceList();
-                for(Workspace workspace : workspaces){
-                    System.out.println("Workspace: " + workspace.getName());
-                    for(Booking booking : workspace.getBookings()){
-                        System.out.println(booking.getStart() + " - " + booking.getEnd());
-                    }
-                }
+
+        Optional<User> maybeUser = userDao.findByUsername(username);
+
+        List<Booking> bookings = bookingDao.getByUserId(maybeUser.get().getId());
+
+        if(bookings.size() == 0){
+            System.out.println("Пользователь еще не забронировал себе место.");
+        }else{
+            for(Booking booking : bookings){
+
+                Optional<Workspace> workspace = workspaceDao.findById(booking.getWorkspaceId());
+
+                System.out.println(workspace.get().getName() + " - " + booking.getStart() + " : " + booking.getEnd());
             }
         }
+
+
     }
 }

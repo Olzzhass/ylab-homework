@@ -1,8 +1,13 @@
 package kaz.olzhas.ylab.handler;
 
+/**
+ * Класс для отображения основной панели и управления основными действиями приложения.
+ */
 public class MainHandler {
 
-    //Метод для отображения панели для всех
+    /**
+     * Метод для отображения основной панели с возможными действиями для всех пользователей.
+     */
     public void displayMainPanel(){
         System.out.println("Добро пожаловать в наш Coworking Centre.");
         System.out.println("       Выберите действие:");
@@ -11,6 +16,9 @@ public class MainHandler {
         System.out.println("3. Выключить приложение");
     }
 
+    /**
+     * Метод для завершения работы приложения.
+     */
     public void quit(){
         System.out.println("До скорой встречи!");
         System.exit(0);

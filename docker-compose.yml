@@ -1,0 +1,11 @@
+version: '3'
+services:
+  base-project-pg:
+    container_name: coworking-service-db
+    image: postgres:15
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: o130805o
+      POSTGRES_DB: coworking-service-db
+    ports:
+      - '5433:5432'

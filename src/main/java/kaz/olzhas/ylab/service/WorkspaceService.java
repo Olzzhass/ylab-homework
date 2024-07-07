@@ -1,8 +1,16 @@
 package kaz.olzhas.ylab.service;
 
+import kaz.olzhas.ylab.dao.BookingDao;
+import kaz.olzhas.ylab.dao.UserDao;
+import kaz.olzhas.ylab.dao.WorkspaceDao;
+import kaz.olzhas.ylab.dao.implementations.BookingDaoImpl;
+import kaz.olzhas.ylab.dao.implementations.UserDaoImpl;
+import kaz.olzhas.ylab.dao.implementations.WorkspaceDaoImpl;
 import kaz.olzhas.ylab.entity.Booking;
 import kaz.olzhas.ylab.entity.User;
 import kaz.olzhas.ylab.entity.Workspace;
+import kaz.olzhas.ylab.util.ConnectionManager;
+import kaz.olzhas.ylab.util.PropertiesUtil;
 
 import java.awt.print.Book;
 import java.time.LocalDateTime;
@@ -11,129 +19,105 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * Сервисный класс для управления операциями, связанными с рабочими местами.
+ */
 public class WorkspaceService {
 
     private UserService userService;
 
-    private List<Workspace> workspaceList = new ArrayList<>();
-    //Конструктор для Сервиса рабочего места
+    private final WorkspaceDao workspaceDao;
+    private final BookingDao bookingDao;
+    private final UserDao userDao;
 
-    public WorkspaceService(UserService userService){
+    private ConnectionManager connectionManager;
+
+    /**
+     * Конструктор для инициализации сервиса рабочего места.
+     *
+     * @param userService сервис пользователей
+     */
+    public WorkspaceService(UserService userService, ConnectionManager connectionManager){
         this.userService = userService;
+        this.connectionManager = connectionManager;
+        this.userDao = new UserDaoImpl(connectionManager);
+        this.bookingDao = new BookingDaoImpl(connectionManager);
+        this.workspaceDao = new WorkspaceDaoImpl(connectionManager);
     }
 
-    /*
-    Просмотр всех доступных рабочих мест
+    /**
+     * Метод для отображения всех доступных рабочих мест.
      */
     public void showAllAvailableWorkspaces() {
+
+        List<Workspace> workspaces = workspaceDao.findAll();
         System.out.println("Доступные рабочие места:");
-        for(Workspace workspace : workspaceList){
+        for(Workspace workspace : workspaces){
             System.out.println(workspace.getId() + " : " + workspace.getName());
         }
+
     }
 
-    /*
-    Метод для брони помещения
+    /**
+     * Метод для бронирования рабочего места.
+     *
+     * @param workspaceId идентификатор рабочего места для бронирования
+     * @param start       начальная дата и время бронирования
+     * @param end         конечная дата и время бронирования
+     * @param whoLogged   имя пользователя, который осуществляет бронирование
+     * @return true, если бронирование успешно добавлено, иначе false
      */
-    public boolean bookWorkspace(int workspaceId, LocalDateTime start, LocalDateTime end, String whoLogged) {
+    public boolean bookWorkspace(Long workspaceId, LocalDateTime start, LocalDateTime end, String whoLogged) {
 
-        Workspace workspace = getWorkspaceById(workspaceId);
-        if(workspace.isAvailable(start, end)){
-            Booking booking = new Booking(start, end);
-            workspace.addBooking(booking);
+        Optional<User> maybeUser = userDao.findByUsername(whoLogged);
 
-            User user = userService.getUserByUsername(whoLogged);
-            List<Workspace> userWorkspaceList = user.getWorkspaceList();
-            Optional<Workspace> userWorkspace = userWorkspaceList.stream()
-                    .filter(w -> w.getId() == workspaceId)
-                    .findFirst();
+        User user = maybeUser.get();
 
-            if (userWorkspace.isPresent()) {
-                userWorkspace.get(); //.addBooking()
-            } else {
-                userWorkspaceList.add(workspace);
-            }
-            return true;
-        }
-        return false;
+        return bookingDao.save(user.getId(), workspaceId, start, end);
+
     }
 
-    /*
-    Метод для удаления брони
+    /**
+     * Метод для удаления бронирования по его номеру.
+     *
+     * @param bookingNumber номер бронирования для удаления
+     * @return true, если бронирование успешно удалено, иначе false
      */
-    public void deleteReservation(int workspaceNumber, int bookingNumber, String whoLogged) {
-        boolean workspaceDeleted = false;
-        boolean userBookingDeleted = false;
+    public boolean deleteReservation(Long bookingNumber) {
 
-        Workspace workspace = getWorkspaceById(workspaceNumber);
-        List<Booking> bookings = workspace.getBookings();
-        Iterator<Booking> iterator = bookings.iterator();
-        while (iterator.hasNext()) {
-            Booking booking = iterator.next();
-            if (booking.getId() == bookingNumber) {
-                iterator.remove();
-                workspaceDeleted = true;
-            }
-        }
-        User user = userService.getUserByUsername(whoLogged);
-        List<Workspace> userWorkspaceList = user.getWorkspaceList();
+        return bookingDao.deleteById(bookingNumber);
 
-        for(Workspace workspace1 : userWorkspaceList){
-            if(workspace1.getId() == workspaceNumber){
-                List<Booking> userWorkspaceBookings = workspace1.getBookings();
-                if(userWorkspaceBookings.size() == 0){
-                    userWorkspaceList.remove(workspace1);
-                    userBookingDeleted = true;
+    }
+
+    /**
+     * Метод для получения доступных временных слотов для рабочего места на определенную дату.
+     *
+     * @param workspaceId идентификатор рабочего места
+     * @param date        дата, для которой нужно найти доступные временные слоты
+     * @return список доступных временных слотов на указанную дату
+     */
+    public List<LocalDateTime> getAvailableSlots(Long workspaceId, LocalDateTime date){
+
+        List<LocalDateTime> availableSlots = new ArrayList<>();
+        LocalDateTime startOfDay = date.withHour(0).withMinute(0).withSecond(0);
+        LocalDateTime endOfDay = date.withHour(23).withMinute(59).withSecond(59);
+
+        List<Booking> bookings = bookingDao.getBookingsForWorkspace(workspaceId, startOfDay, endOfDay);
+
+        for (LocalDateTime slot = startOfDay; slot.isBefore(endOfDay); slot = slot.plusHours(1)) {
+            boolean isSlotAvailable = true;
+            for (Booking booking : bookings) {
+                if (booking.overlaps(slot, slot.plusHours(1))) {
+                    isSlotAvailable = false;
                     break;
                 }
-                userWorkspaceBookings.removeIf(booking -> booking.getId() == bookingNumber);
-                userBookingDeleted = true;
+            }
+            if (isSlotAvailable) {
+                availableSlots.add(slot);
             }
         }
 
-        if( workspaceDeleted && userBookingDeleted){
-            System.out.println("Ваш бронь успешно удалено!");
-        }else{
-            System.out.println("Ошибка при удалении брони.");
-        }
-    }
+        return availableSlots;
 
-    /*
-    Метод чтобы получить доступные слоты по помещению на определенную дату
-     */
-    public List<LocalDateTime> getAvailableSlots(int workspaceId, LocalDateTime date){
-        Workspace workspace = getWorkspaceById(workspaceId);
-        return workspace.getAvailableSlots(date);
-    }
-
-    /*
-    Метод для получения помещения по его id
-     */
-    public Workspace getWorkspaceById(int id){
-        for(Workspace workspace : workspaceList){
-            if(workspace.getId() == id){
-                return workspace;
-            }
-        }
-        return null;
-    }
-
-    /*
-    Методы чтобы получить все брони
-     */
-    public List<Booking> getAllBookings(){
-        List<Booking> allBookings = new ArrayList<>();
-        for(Workspace workspace : workspaceList){
-            allBookings.addAll(workspace.getBookings());
-        }
-        return allBookings;
-    }
-
-    public List<Workspace> getWorkspaceList() {
-        return workspaceList;
-    }
-
-    public void setWorkspaceList(List<Workspace> workspaceList) {
-        this.workspaceList = workspaceList;
     }
 }
