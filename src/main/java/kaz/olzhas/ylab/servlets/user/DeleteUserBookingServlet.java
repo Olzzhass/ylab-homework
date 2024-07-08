@@ -35,7 +35,7 @@ public class DeleteUserBookingServlet extends HttpServlet {
         try {
 
             if(authentication.isAuth()){
-                DeleteBookingDto deleteBookingDto = objectMapper.readValue(req.getInputStream(), DeleteBookingDto.class);
+                DeleteBookingDto deleteBookingDto = objectMapper.readValue(req.getReader(), DeleteBookingDto.class);
 
                 boolean isDeleted = workspaceService.deleteReservation(deleteBookingDto.getBookingId());
 

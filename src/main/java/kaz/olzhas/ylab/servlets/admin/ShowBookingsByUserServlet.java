@@ -44,8 +44,8 @@ public class ShowBookingsByUserServlet extends HttpServlet {
 
                 List<BookingDto> bookingsDto = bookings.stream().map(bookingMapper::toDto).toList();
 
-                resp.setStatus(HttpServletResponse.SC_OK);
                 objectMapper.writeValue(resp.getWriter(), bookingsDto);
+                resp.setStatus(HttpServletResponse.SC_OK);
 
             } catch (ValidationParametersException e) {
                 resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);

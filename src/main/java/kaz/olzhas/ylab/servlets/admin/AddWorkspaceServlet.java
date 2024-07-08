@@ -55,7 +55,7 @@ public class AddWorkspaceServlet extends HttpServlet {
             throw new ValidationParametersException("Имя пользователя пустое!");
         }
 
-        WorkspaceRequest workspaceRequest = objectMapper.readValue(req.getInputStream(), WorkspaceRequest.class);
+        WorkspaceRequest workspaceRequest = objectMapper.readValue(req.getReader(), WorkspaceRequest.class);
 
         if(adminService.addWorkspace(workspaceRequest.workspaceName())){
             resp.setStatus(HttpServletResponse.SC_OK);

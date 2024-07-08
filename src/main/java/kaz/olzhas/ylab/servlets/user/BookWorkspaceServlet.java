@@ -38,7 +38,7 @@ public class BookWorkspaceServlet extends HttpServlet {
 
             if (authentication.isAuth()) {
 
-                BookingDto bookingDto = objectMapper.readValue(req.getInputStream(), BookingDto.class);
+                BookingDto bookingDto = objectMapper.readValue(req.getReader(), BookingDto.class);
                 System.out.println(bookingDto.getStart());
                 System.out.println(bookingDto.getEnd());
                 boolean isBooked = workspaceService.bookWorkspace(bookingDto.getWorkspaceId(), bookingDto.getStart(), bookingDto.getEnd(), authentication.getUsername());
@@ -47,7 +47,7 @@ public class BookWorkspaceServlet extends HttpServlet {
                     resp.setStatus(HttpServletResponse.SC_OK);
                     objectMapper.writeValue(resp.getWriter(), new ResponseMessage("Рабочее место успешно забронировано!"));
                 }else{
-                    resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+                    resp.setStatus(HttpServletResponse.SC_NOT_FOUND);
                     resp.getWriter().write("Ошибка бронирования!");
                 }
             }else{

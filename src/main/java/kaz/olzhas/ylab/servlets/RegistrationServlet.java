@@ -39,7 +39,7 @@ public class RegistrationServlet extends HttpServlet {
 
         try {
 
-            UserRequest userRequest = objectMapper.readValue(req.getInputStream(), UserRequest.class);
+            UserRequest userRequest = objectMapper.readValue(req.getReader(), UserRequest.class);
             boolean registeredUser = userService.registerUser(userRequest.username(), userRequest.password());
 
 
@@ -60,7 +60,5 @@ public class RegistrationServlet extends HttpServlet {
             resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
             objectMapper.writeValue(resp.getWriter(), new ExceptionResponse(e.getMessage()));
         }
-
-        super.doPost(req, resp);
     }
 }

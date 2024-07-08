@@ -50,7 +50,7 @@ public class ShowSlotsByDateServlet extends HttpServlet {
                 objectMapper.writeValue(resp.getWriter(), availableSlots);
             }else{
                 resp.setStatus(HttpServletResponse.SC_FORBIDDEN);
-                resp.getWriter().write("Сначало нужно войти в приложение!");
+                resp.getWriter().write("Сначала нужно войти в приложение!");
             }
 
         } catch (NumberFormatException e) {

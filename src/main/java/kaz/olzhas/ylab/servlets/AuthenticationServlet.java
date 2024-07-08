@@ -38,7 +38,7 @@ public class AuthenticationServlet extends HttpServlet {
         resp.setContentType("application/json");
 
         try {
-            UserRequest request = objectMapper.readValue(req.getInputStream(), UserRequest.class);
+            UserRequest request = objectMapper.readValue(req.getReader(), UserRequest.class);
 
             boolean authorize = false;
 
