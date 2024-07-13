@@ -9,6 +9,7 @@ import kaz.olzhas.ylab.dao.implementations.WorkspaceDaoImpl;
 import kaz.olzhas.ylab.entity.Booking;
 import kaz.olzhas.ylab.entity.User;
 import kaz.olzhas.ylab.entity.Workspace;
+import kaz.olzhas.ylab.exception.NotValidArgumentException;
 import kaz.olzhas.ylab.util.ConnectionManager;
 import kaz.olzhas.ylab.util.PropertiesUtil;
 
@@ -69,12 +70,34 @@ public class WorkspaceService {
      */
     public boolean bookWorkspace(Long workspaceId, LocalDateTime start, LocalDateTime end, String whoLogged) {
 
-        Optional<User> maybeUser = userDao.findByUsername(whoLogged);
+//        Optional<User> maybeUser = userDao.findByUsername(whoLogged);
+//
+//        User user = maybeUser.get();
+//
+//        return bookingDao.save(user.getId(), workspaceId, start, end);
 
-        User user = maybeUser.get();
 
-        return bookingDao.save(user.getId(), workspaceId, start, end);
+        try {
+            Optional<User> maybeUser = userDao.findByUsername(whoLogged);
 
+            if (maybeUser.isEmpty()) {
+                throw new NotValidArgumentException("User not found: " + whoLogged);
+            }
+
+            User user = maybeUser.get();
+
+            boolean isSaved = bookingDao.save(user.getId(), workspaceId, start, end);
+            if (!isSaved) {
+                throw new RuntimeException("Failed to book workspace: " + workspaceId);
+            }
+
+            return true;
+        } catch (Exception e) {
+            // Логирование исключения для отладки
+            System.err.println("Error booking workspace: " + e.getMessage());
+            e.printStackTrace();
+            return false;
+        }
     }
 
     /**

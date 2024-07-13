@@ -1,11 +1,14 @@
 package kaz.olzhas.ylab.service;
 
+import kaz.olzhas.ylab.dao.AdminDao;
 import kaz.olzhas.ylab.dao.BookingDao;
 import kaz.olzhas.ylab.dao.UserDao;
 import kaz.olzhas.ylab.dao.WorkspaceDao;
+import kaz.olzhas.ylab.dao.implementations.AdminDaoImpl;
 import kaz.olzhas.ylab.dao.implementations.BookingDaoImpl;
 import kaz.olzhas.ylab.dao.implementations.UserDaoImpl;
 import kaz.olzhas.ylab.dao.implementations.WorkspaceDaoImpl;
+import kaz.olzhas.ylab.entity.Admin;
 import kaz.olzhas.ylab.entity.Booking;
 import kaz.olzhas.ylab.entity.User;
 import kaz.olzhas.ylab.entity.Workspace;
@@ -28,6 +31,7 @@ public class AdminService {
     private final WorkspaceDao workspaceDao;
     private final UserDao userDao;
     private final BookingDao bookingDao;
+    private final AdminDao adminDao;
 
     private ConnectionManager connectionManager;
 
@@ -44,6 +48,18 @@ public class AdminService {
         this.userDao = new UserDaoImpl(connectionManager);
         this.workspaceDao = new WorkspaceDaoImpl(connectionManager);
         this.bookingDao = new BookingDaoImpl(connectionManager);
+        this.adminDao = new AdminDaoImpl(connectionManager);
+    }
+
+    public boolean authenticateAdmin(String username, String password){
+        Optional<Admin> maybeAdmin = adminDao.findByUsername(username);
+
+        if(maybeAdmin.isPresent()){
+            Admin admin = maybeAdmin.get();
+            return admin.getAdminPassword().equals(password);
+        }
+
+        return false;
     }
 
     /**
@@ -51,13 +67,12 @@ public class AdminService {
      *
      * @param name имя нового помещения
      */
-    public void addWorkspace(String name){
+    public boolean addWorkspace(String name){
 
         Workspace workspace = new Workspace();
         workspace.setName(name);
 
-        workspaceDao.save(workspace);
-        System.out.println("Рабочее место успешно добавлено.");
+        return workspaceDao.save(workspace);
 
     }
 
@@ -117,22 +132,11 @@ public class AdminService {
      *
      * @param username имя пользователя
      */
-    public void bookingsByUser(String username){
+    public List<Booking> bookingsByUser(String username){
 
         Optional<User> maybeUser = userDao.findByUsername(username);
 
-        List<Booking> bookings = bookingDao.getByUserId(maybeUser.get().getId());
-
-        if(bookings.size() == 0){
-            System.out.println("Пользователь еще не забронировал себе место.");
-        }else{
-            for(Booking booking : bookings){
-
-                Optional<Workspace> workspace = workspaceDao.findById(booking.getWorkspaceId());
-
-                System.out.println(workspace.get().getName() + " - " + booking.getStart() + " : " + booking.getEnd());
-            }
-        }
+        return bookingDao.getByUserId(maybeUser.get().getId());
 
 
     }

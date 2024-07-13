@@ -1,5 +1,6 @@
 package kaz.olzhas.ylab.service;
 
+import kaz.olzhas.ylab.annotations.Loggable;
 import kaz.olzhas.ylab.dao.BookingDao;
 import kaz.olzhas.ylab.dao.UserDao;
 import kaz.olzhas.ylab.dao.WorkspaceDao;
@@ -9,6 +10,7 @@ import kaz.olzhas.ylab.dao.implementations.WorkspaceDaoImpl;
 import kaz.olzhas.ylab.entity.Booking;
 import kaz.olzhas.ylab.entity.User;
 import kaz.olzhas.ylab.entity.Workspace;
+import kaz.olzhas.ylab.exception.RegisterException;
 import kaz.olzhas.ylab.util.ConnectionManager;
 import kaz.olzhas.ylab.util.PropertiesUtil;
 
@@ -17,6 +19,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.logging.LogManager;
+import java.util.logging.Logger;
 
 /**
  * Сервисный класс для управления операциями, связанными с пользователями.
@@ -43,11 +47,12 @@ public class UserService {
      * @param registrationPassword пароль пользователя для регистрации
      * @return true, если пользователь успешно зарегистрирован, false если пользователь с таким именем уже существует
      */
+    @Loggable
     public boolean registerUser(String registrationUsername, String registrationPassword) {
 
         Optional<User> maybeUser = userDao.findByUsername(registrationUsername);
         if(maybeUser.isPresent()){
-            return false;
+            throw new RegisterException("Пользователь с таким именем уже существует");
         }else{
             userDao.save(new User(registrationUsername, registrationPassword));
             return true;
@@ -63,11 +68,6 @@ public class UserService {
      * @return true, если пользователь успешно аутентифицирован, иначе false
      */
     public boolean authenticateUser(String authUsername, String authPassword) {
-
-        // Можно было бы хранить в другом месте
-        if(authUsername.equalsIgnoreCase("admin") && authPassword.equalsIgnoreCase("admin123")){
-            return true;
-        }
 
         Optional<User> maybeUser = userDao.findByUsername(authUsername);
 
