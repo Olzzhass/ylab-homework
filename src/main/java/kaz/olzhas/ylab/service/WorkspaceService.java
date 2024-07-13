@@ -1,57 +1,40 @@
 package kaz.olzhas.ylab.service;
 
-import kaz.olzhas.ylab.dao.BookingDao;
-import kaz.olzhas.ylab.dao.UserDao;
-import kaz.olzhas.ylab.dao.WorkspaceDao;
-import kaz.olzhas.ylab.dao.implementations.BookingDaoImpl;
-import kaz.olzhas.ylab.dao.implementations.UserDaoImpl;
-import kaz.olzhas.ylab.dao.implementations.WorkspaceDaoImpl;
+import kaz.olzhas.ylab.annotations.Auditable;
+import kaz.olzhas.ylab.annotations.Loggable;
 import kaz.olzhas.ylab.entity.Booking;
 import kaz.olzhas.ylab.entity.User;
 import kaz.olzhas.ylab.entity.Workspace;
+import kaz.olzhas.ylab.entity.types.ActionType;
 import kaz.olzhas.ylab.exception.NotValidArgumentException;
-import kaz.olzhas.ylab.util.ConnectionManager;
-import kaz.olzhas.ylab.util.PropertiesUtil;
-
-import java.awt.print.Book;
+import kaz.olzhas.ylab.repository.BookingRepository;
+import kaz.olzhas.ylab.repository.UserRepository;
+import kaz.olzhas.ylab.repository.WorkspaceRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
 
 /**
  * Сервисный класс для управления операциями, связанными с рабочими местами.
  */
+@Service
+@RequiredArgsConstructor
 public class WorkspaceService {
 
-    private UserService userService;
-
-    private final WorkspaceDao workspaceDao;
-    private final BookingDao bookingDao;
-    private final UserDao userDao;
-
-    private ConnectionManager connectionManager;
-
-    /**
-     * Конструктор для инициализации сервиса рабочего места.
-     *
-     * @param userService сервис пользователей
-     */
-    public WorkspaceService(UserService userService, ConnectionManager connectionManager){
-        this.userService = userService;
-        this.connectionManager = connectionManager;
-        this.userDao = new UserDaoImpl(connectionManager);
-        this.bookingDao = new BookingDaoImpl(connectionManager);
-        this.workspaceDao = new WorkspaceDaoImpl(connectionManager);
-    }
+    private final UserRepository userRepository;
+    private final WorkspaceRepository workspaceRepository;
+    private final BookingRepository bookingRepository;
 
     /**
      * Метод для отображения всех доступных рабочих мест.
      */
+    @Auditable(actionType = ActionType.SHOW_AVAILABLE_WORKSPACES)
     public void showAllAvailableWorkspaces() {
 
-        List<Workspace> workspaces = workspaceDao.findAll();
+        List<Workspace> workspaces = workspaceRepository.findAll();
         System.out.println("Доступные рабочие места:");
         for(Workspace workspace : workspaces){
             System.out.println(workspace.getId() + " : " + workspace.getName());
@@ -68,17 +51,12 @@ public class WorkspaceService {
      * @param whoLogged   имя пользователя, который осуществляет бронирование
      * @return true, если бронирование успешно добавлено, иначе false
      */
+    @Loggable
+    @Auditable(actionType = ActionType.BOOK_WORKSPACE)
     public boolean bookWorkspace(Long workspaceId, LocalDateTime start, LocalDateTime end, String whoLogged) {
 
-//        Optional<User> maybeUser = userDao.findByUsername(whoLogged);
-//
-//        User user = maybeUser.get();
-//
-//        return bookingDao.save(user.getId(), workspaceId, start, end);
-
-
         try {
-            Optional<User> maybeUser = userDao.findByUsername(whoLogged);
+            Optional<User> maybeUser = userRepository.findByUsername(whoLogged);
 
             if (maybeUser.isEmpty()) {
                 throw new NotValidArgumentException("User not found: " + whoLogged);
@@ -86,7 +64,7 @@ public class WorkspaceService {
 
             User user = maybeUser.get();
 
-            boolean isSaved = bookingDao.save(user.getId(), workspaceId, start, end);
+            boolean isSaved = bookingRepository.save(user.getId(), workspaceId, start, end);
             if (!isSaved) {
                 throw new RuntimeException("Failed to book workspace: " + workspaceId);
             }
@@ -106,9 +84,11 @@ public class WorkspaceService {
      * @param bookingNumber номер бронирования для удаления
      * @return true, если бронирование успешно удалено, иначе false
      */
+    @Loggable
+    @Auditable(actionType = ActionType.DELETE_RESERVATION)
     public boolean deleteReservation(Long bookingNumber) {
 
-        return bookingDao.deleteById(bookingNumber);
+        return bookingRepository.deleteById(bookingNumber);
 
     }
 
@@ -119,13 +99,15 @@ public class WorkspaceService {
      * @param date        дата, для которой нужно найти доступные временные слоты
      * @return список доступных временных слотов на указанную дату
      */
+    @Loggable
+    @Auditable(actionType = ActionType.GET_AVAILABLE_SLOTS)
     public List<LocalDateTime> getAvailableSlots(Long workspaceId, LocalDateTime date){
 
         List<LocalDateTime> availableSlots = new ArrayList<>();
         LocalDateTime startOfDay = date.withHour(0).withMinute(0).withSecond(0);
         LocalDateTime endOfDay = date.withHour(23).withMinute(59).withSecond(59);
 
-        List<Booking> bookings = bookingDao.getBookingsForWorkspace(workspaceId, startOfDay, endOfDay);
+        List<Booking> bookings = bookingRepository.getBookingsForWorkspace(workspaceId, startOfDay, endOfDay);
 
         for (LocalDateTime slot = startOfDay; slot.isBefore(endOfDay); slot = slot.plusHours(1)) {
             boolean isSlotAvailable = true;

@@ -1,12 +1,17 @@
-<Configuration name="ConfigTest" status="INFO" monitorInterval="5">
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="WARN">
     <Appenders>
-        <Console name="Out">
-            <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{1} -- %msg%n"/>
+        <Console name="LogToConsole" target="SYSTEM_OUT">
+            <PatternLayout pattern="%d{HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n"/>
         </Console>
     </Appenders>
+
     <Loggers>
-        <Root level="info">
-            <AppenderRef ref="Out"/>
+        <Logger name="kaz.olzhas.ylab" level="debug" additivity="false">
+            <AppenderRef ref="LogToConsole"/>
+        </Logger>
+        <Root level="error">
+            <AppenderRef ref="LogToConsole"/>
         </Root>
     </Loggers>
 </Configuration>

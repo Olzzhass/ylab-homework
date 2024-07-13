@@ -1,44 +1,31 @@
 package kaz.olzhas.ylab.service;
 
+import kaz.olzhas.ylab.annotations.Auditable;
 import kaz.olzhas.ylab.annotations.Loggable;
-import kaz.olzhas.ylab.dao.BookingDao;
-import kaz.olzhas.ylab.dao.UserDao;
-import kaz.olzhas.ylab.dao.WorkspaceDao;
-import kaz.olzhas.ylab.dao.implementations.BookingDaoImpl;
-import kaz.olzhas.ylab.dao.implementations.UserDaoImpl;
-import kaz.olzhas.ylab.dao.implementations.WorkspaceDaoImpl;
 import kaz.olzhas.ylab.entity.Booking;
 import kaz.olzhas.ylab.entity.User;
 import kaz.olzhas.ylab.entity.Workspace;
+import kaz.olzhas.ylab.entity.types.ActionType;
+import kaz.olzhas.ylab.exception.NotValidArgumentException;
 import kaz.olzhas.ylab.exception.RegisterException;
-import kaz.olzhas.ylab.util.ConnectionManager;
-import kaz.olzhas.ylab.util.PropertiesUtil;
-
-import java.awt.print.Book;
-import java.util.HashMap;
+import kaz.olzhas.ylab.repository.BookingRepository;
+import kaz.olzhas.ylab.repository.UserRepository;
+import kaz.olzhas.ylab.repository.WorkspaceRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
-import java.util.logging.LogManager;
-import java.util.logging.Logger;
 
 /**
  * Сервисный класс для управления операциями, связанными с пользователями.
  */
+@Service
+@RequiredArgsConstructor
 public class UserService {
 
-    private final UserDao userDao;
-    private final WorkspaceDao workspaceDao;
-    private final BookingDao bookingDao;
-    private ConnectionManager connectionManager;
-
-    public UserService(ConnectionManager connectionManager) {
-        this.connectionManager = connectionManager;
-        this.userDao = new UserDaoImpl(connectionManager);
-        this.workspaceDao = new WorkspaceDaoImpl(connectionManager);
-        this.bookingDao = new BookingDaoImpl(connectionManager);
-    }
-
+    private final UserRepository userRepository;
+    private final BookingRepository bookingRepository;
+    private final WorkspaceRepository workspaceRepository;
 
     /**
      * Метод для регистрации нового пользователя.
@@ -50,11 +37,15 @@ public class UserService {
     @Loggable
     public boolean registerUser(String registrationUsername, String registrationPassword) {
 
-        Optional<User> maybeUser = userDao.findByUsername(registrationUsername);
+        if(registrationUsername == null || registrationPassword == null || registrationUsername.isEmpty() || registrationPassword.isEmpty()){
+            throw new NotValidArgumentException("Пароль или логин не могут быть пустыми или состоять только из пробелов.");
+        }
+
+        Optional<User> maybeUser = userRepository.findByUsername(registrationUsername);
         if(maybeUser.isPresent()){
             throw new RegisterException("Пользователь с таким именем уже существует");
         }else{
-            userDao.save(new User(registrationUsername, registrationPassword));
+            userRepository.save(new User(registrationUsername, registrationPassword));
             return true;
         }
 
@@ -67,9 +58,10 @@ public class UserService {
      * @param authPassword пароль пользователя для аутентификации
      * @return true, если пользователь успешно аутентифицирован, иначе false
      */
+    @Loggable
     public boolean authenticateUser(String authUsername, String authPassword) {
 
-        Optional<User> maybeUser = userDao.findByUsername(authUsername);
+        Optional<User> maybeUser = userRepository.findByUsername(authUsername);
 
         if(maybeUser.isPresent()){
             User user = maybeUser.get();
@@ -86,12 +78,14 @@ public class UserService {
      * @param whoLogged имя пользователя, для которого нужно получить бронирования
      * @return список бронирований пользователя
      */
+    @Auditable(actionType = ActionType.SHOW_RESERVATIONS)
+    @Loggable
     public List<Booking> showAllReservations(String whoLogged) {
 
-        Optional<User> user = userDao.findByUsername(whoLogged);
+        Optional<User> user = userRepository.findByUsername(whoLogged);
 
 
-        List<Booking> bookings = bookingDao.getByUserId(user.get().getId());
+        List<Booking> bookings = bookingRepository.getByUserId(user.get().getId());
 
         return bookings;
 
@@ -103,8 +97,9 @@ public class UserService {
      * @param id идентификатор помещения
      * @return объект Optional с информацией о помещении, если такое найдено, иначе пустой Optional
      */
+    @Loggable
     public Optional<Workspace> getWorkspacesById(Long id){
-        return workspaceDao.findById(id);
+        return workspaceRepository.findById(id);
     }
 
     /**
@@ -113,8 +108,9 @@ public class UserService {
      * @param userId идентификатор пользователя
      * @return объект пользователя, если найден, иначе null
      */
+    @Loggable
     public User getUserById(Long userId){
-        return userDao.getById(userId);
+        return userRepository.getById(userId);
     }
 
 }
