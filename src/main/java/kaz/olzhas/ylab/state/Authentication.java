@@ -1,17 +1,29 @@
 package kaz.olzhas.ylab.state;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.Getter;
+import lombok.Setter;
+import org.springframework.beans.factory.config.ConfigurableBeanFactory;
+import org.springframework.context.annotation.Scope;
+import org.springframework.stereotype.Component;
 
-@NoArgsConstructor
-@AllArgsConstructor
-@Data
+/**
+ * Представляет состояние аутентификации пользователя.
+ * Этот класс управляет именем пользователя и состоянием аутентификации.
+ */
+@Component
+@Scope(value = ConfigurableBeanFactory.SCOPE_SINGLETON)
+@Getter
+@Setter
 public class Authentication {
     private String username;
     private boolean isAuth;
 
-    public boolean isAdmin(){
+    /**
+     * Проверяет, является ли аутентифицированный пользователь администратором.
+     *
+     * @return true, если пользователь аутентифицирован и является администратором, иначе false
+     */
+    public boolean isAdmin() {
         return isAuth && "Admin".equalsIgnoreCase(username);
     }
 }

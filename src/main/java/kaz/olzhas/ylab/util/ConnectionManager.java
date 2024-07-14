@@ -1,47 +1,69 @@
 package kaz.olzhas.ylab.util;
 
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.PropertySource;
+import org.springframework.stereotype.Component;
+
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.SQLException;
 
 /**
  * Класс ConnectionManager управляет подключением к базе данных.
  * Этот класс предоставляет методы для получения соединения с базой данных и загрузки драйвера базы данных.
  */
+@Component
+@PropertySource(value = "classpath:application.yml", factory = YamlPropertySourceFactory.class)
 public class ConnectionManager {
-    private final String URL;
-    private final String username;
-    private final String password;
+
+    @Value("${datasource.url}")
+    private String URL;
+    @Value("${datasource.driver-class-name}")
+    private String driver;
+    @Value("${datasource.username}")
+    private String username;
+    @Value("${datasource.password}")
+    private String password;
 
     /**
-     * Конструктор ConnectionManager.
+     * Получает соединение с базой данных, используя настройки из application.yml.
      *
-     * @param URL      URL базы данных
-     * @param username имя пользователя базы данных
-     * @param password пароль пользователя базы данных
-     * @param driver   драйвер базы данных
+     * @return объект Connection для взаимодействия с базой данных
+     * @throws RuntimeException если возникает ошибка при подключении к базе данных
      */
-    public ConnectionManager(String URL, String username, String password, String driver) {
-        this.URL = URL;
-        this.username = username;
-        this.password = password;
-
+    public Connection getConnection() {
         try {
             Class.forName(driver);
+
+            return DriverManager.getConnection(
+                    URL,
+                    username,
+                    password
+            );
+        } catch (SQLException e) {
+            throw new RuntimeException("Ошибка подключения к базе данных.", e);
         } catch (ClassNotFoundException e) {
             throw new RuntimeException(e);
         }
     }
 
     /**
-     * Метод для получения соединения с базой данных.
+     * Получает соединение с базой данных с заданными параметрами.
      *
-     * @return объект Connection для подключения к базе данных
-     * @throws RuntimeException если возникла ошибка при подключении
+     * @param URL      URL базы данных
+     * @param username имя пользователя базы данных
+     * @param password пароль пользователя базы данных
+     * @param driver   класс драйвера базы данных
+     * @return объект Connection для взаимодействия с базой данных
+     * @throws RuntimeException если возникает ошибка при подключении к базе данных
      */
-    public Connection getConnection() {
+    public Connection getConnection(String URL, String username, String password, String driver) {
         try {
+            Class.forName(driver);
             return DriverManager.getConnection(URL, username, password);
-        } catch (Exception e) {
+        } catch (SQLException e) {
+            throw new RuntimeException("Ошибка подключения к базе данных.", e);
+        } catch (ClassNotFoundException e) {
             throw new RuntimeException(e);
         }
     }
