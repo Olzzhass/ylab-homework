@@ -4,11 +4,6 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-/**
- * Сущность {@code Admin} представляет администратора системы.
- *
- * <p>Класс содержит основные поля и методы для работы с данными администратора.</p>
- */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -18,10 +13,10 @@ public class Admin {
     private String adminPassword;
 
     /**
-     * Конструктор для создания администратора с указанием имени и пароля.
+     * Конструктор для создания пользователя с указанием username и password.
      *
-     * @param adminName имя администратора.
-     * @param adminPassword пароль администратора.
+     * @param adminName имя пользователя.
+     * @param adminPassword пароль пользователя.
      */
     public Admin(String adminName, String adminPassword){
         this.adminName = adminName;

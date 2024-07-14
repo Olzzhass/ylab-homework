@@ -4,15 +4,18 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.awt.print.Book;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+
 /**
- * Сущность {@code Workspace} представляет информацию о помещении в системе.
- *
- * <p>Класс содержит поля, описывающие идентификатор помещения ({@code id}) и его название ({@code name}).</p>
+ * Класс помещения.
  */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 public class Workspace {
-    private Long id;
-    private String name;
+    private Long id; // id номер помещения
+    private String name; //имя помещения
 }

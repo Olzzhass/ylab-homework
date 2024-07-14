@@ -4,10 +4,12 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.ArrayList;
+import java.util.List;
+
+
 /**
- * Сущность {@code User} представляет информацию о пользователе системы.
- *
- * <p>Класс содержит поля, описывающие идентификатор пользователя ({@code id}), имя пользователя ({@code username}) и пароль ({@code password}).</p>
+ * Класс пользователя, содержащий простые поля username и password.
  */
 @Data
 @NoArgsConstructor
@@ -19,10 +21,10 @@ public class User {
     private String password;
 
     /**
-     * Конструктор для создания объекта пользователя с указанием имени и пароля.
+     * Конструктор для создания пользователя с указанием username и password.
      *
-     * @param username имя пользователя
-     * @param password пароль пользователя
+     * @param username имя пользователя.
+     * @param password пароль пользователя.
      */
     public User(String username, String password){
         this.username = username;
