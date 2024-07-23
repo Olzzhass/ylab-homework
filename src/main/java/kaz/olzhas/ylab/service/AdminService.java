@@ -1,58 +1,42 @@
 package kaz.olzhas.ylab.service;
 
-import kaz.olzhas.ylab.dao.AdminDao;
-import kaz.olzhas.ylab.dao.BookingDao;
-import kaz.olzhas.ylab.dao.UserDao;
-import kaz.olzhas.ylab.dao.WorkspaceDao;
-import kaz.olzhas.ylab.dao.implementations.AdminDaoImpl;
-import kaz.olzhas.ylab.dao.implementations.BookingDaoImpl;
-import kaz.olzhas.ylab.dao.implementations.UserDaoImpl;
-import kaz.olzhas.ylab.dao.implementations.WorkspaceDaoImpl;
+import kaz.olzhas.ylab.annotations.Auditable;
 import kaz.olzhas.ylab.entity.Admin;
 import kaz.olzhas.ylab.entity.Booking;
 import kaz.olzhas.ylab.entity.User;
 import kaz.olzhas.ylab.entity.Workspace;
-import kaz.olzhas.ylab.util.ConnectionManager;
-import kaz.olzhas.ylab.util.PropertiesUtil;
+import kaz.olzhas.ylab.entity.types.ActionType;
+import kaz.olzhas.ylab.repository.AdminRepository;
+import kaz.olzhas.ylab.repository.BookingRepository;
+import kaz.olzhas.ylab.repository.UserRepository;
+import kaz.olzhas.ylab.repository.WorkspaceRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
 
-import java.awt.print.Book;
-import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 /**
  * Сервисный класс для администратора, обеспечивающий доступ к операциям над помещениями, пользователями и бронированиями.
  */
+@Service
+@RequiredArgsConstructor
 public class AdminService {
-    private WorkspaceService workspaceService;
-    private UserService userService;
-    private final WorkspaceDao workspaceDao;
-    private final UserDao userDao;
-    private final BookingDao bookingDao;
-    private final AdminDao adminDao;
 
-    private ConnectionManager connectionManager;
+    private final AdminRepository adminRepository;
+    private final UserRepository userRepository;
+    private final WorkspaceRepository workspaceRepository;
+    private final BookingRepository bookingRepository;
 
     /**
-     * Конструктор для инициализации сервиса администратора.
+     * Метод для аутентификации администратора.
      *
-     * @param workspaceService сервис для управления помещениями
-     * @param userService     сервис для управления пользователями
+     * @param username имя пользователя администратора
+     * @param password пароль администратора
+     * @return true, если аутентификация успешна, иначе false
      */
-    public AdminService(WorkspaceService workspaceService, UserService userService, ConnectionManager connectionManager) {
-        this.workspaceService = workspaceService;
-        this.userService = userService;
-        this.connectionManager = connectionManager;
-        this.userDao = new UserDaoImpl(connectionManager);
-        this.workspaceDao = new WorkspaceDaoImpl(connectionManager);
-        this.bookingDao = new BookingDaoImpl(connectionManager);
-        this.adminDao = new AdminDaoImpl(connectionManager);
-    }
-
     public boolean authenticateAdmin(String username, String password){
-        Optional<Admin> maybeAdmin = adminDao.findByUsername(username);
+        Optional<Admin> maybeAdmin = adminRepository.findByUsername(username);
 
         if(maybeAdmin.isPresent()){
             Admin admin = maybeAdmin.get();
@@ -66,13 +50,15 @@ public class AdminService {
      * Метод для добавления нового помещения.
      *
      * @param name имя нового помещения
+     * @return true, если добавление успешно, иначе false
      */
+    @Auditable(actionType = ActionType.ADD_WORKSPACE)
     public boolean addWorkspace(String name){
 
         Workspace workspace = new Workspace();
         workspace.setName(name);
 
-        return workspaceDao.save(workspace);
+        return workspaceRepository.save(workspace);
 
     }
 
@@ -81,9 +67,10 @@ public class AdminService {
      *
      * @return список всех помещений
      */
-    public List<Workspace> seeAllWorkspaces(){
+    @Auditable(actionType = ActionType.SHOW_ALL_WORKSPACES)
+    public List<Workspace> showAllWorkspaces(){
 
-        return workspaceDao.findAll();
+        return workspaceRepository.findAll();
 
     }
 
@@ -92,9 +79,10 @@ public class AdminService {
      *
      * @return список всех пользователей
      */
-    public List<User> seeAllUsers(){
+    @Auditable(actionType = ActionType.SHOW_ALL_USERS)
+    public List<User> showAllUsers(){
 
-        return userDao.findAll();
+        return userRepository.findAll();
 
     }
 
@@ -103,14 +91,12 @@ public class AdminService {
      */
     public void seeAllUsersWithoutPassword(){
 
-        List<User> users = userDao.findAll();
-        if(users.size() == 0){
+        List<User> users = userRepository.findAll();
+        if(users.isEmpty()){
             System.out.println("Пока что пользователей нет.");
-        }else{
+        } else {
             System.out.println("ВСЕ ПОЛЬЗОВАТЕЛИ:");
-            for(User user : users){
-                System.out.println("Username: " + user.getUsername());
-            }
+            users.forEach(user -> System.out.println("Username: " + user.getUsername()));
         }
 
     }
@@ -121,9 +107,10 @@ public class AdminService {
      * @param workspaceId идентификатор помещения
      * @return список бронирований для указанного помещения
      */
+    @Auditable(actionType = ActionType.BOOK_WORKSPACE)
     public List<Booking> bookingsByWorkspace(Long workspaceId){
 
-        return bookingDao.getByWorkspaceId(workspaceId);
+        return bookingRepository.getByWorkspaceId(workspaceId);
 
     }
 
@@ -131,13 +118,15 @@ public class AdminService {
      * Метод для просмотра всех бронирований по определенному пользователю.
      *
      * @param username имя пользователя
+     * @return список бронирований для указанного пользователя
      */
+    @Auditable(actionType = ActionType.BOOKINGS_BY_USER)
     public List<Booking> bookingsByUser(String username){
 
-        Optional<User> maybeUser = userDao.findByUsername(username);
+        Optional<User> maybeUser = userRepository.findByUsername(username);
 
-        return bookingDao.getByUserId(maybeUser.get().getId());
-
+        return maybeUser.map(user -> bookingRepository.getByUserId(user.getId()))
+                .orElseThrow(() -> new IllegalArgumentException("User not found: " + username));
 
     }
 }
